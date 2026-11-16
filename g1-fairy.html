@@ -350,6 +350,9 @@ const THEME={
 
 </script>
 <script>
+/* 🧸 분위기 소품 (문제와 상관없는 기물 · 눌러 보면 설명만 나와요) */
+const DECOR=[[["w", "🕯️", "반딧불 등", 540, 250, 115, "반딧불이가 들어 있는 작은 등이에요."], ["f", "🪑", "도토리 의자", 1140, 800, 125, "도토리 껍데기로 만든 의자예요. 앉기엔 너무 작아요!"], ["f", "🧵", "거미줄 실타래", 1500, 800, 125, "요정들이 옷을 짓는 반짝이 실이에요."]], [["f", "🐞", "무당벌레", 525, 735, 125, "점이 일곱 개! 무당벌레가 꽃잎 위에서 쉬고 있어요."], ["w", "🌈", "이슬 방울", 570, 250, 115, "햇빛을 받아 무지개빛으로 반짝여요."], ["f", "🐌", "달팽이", 1080, 735, 125, "느릿느릿… 달팽이는 바빠서 대답을 못 해요."]], [["w", "✨", "요정 가루", 90, 250, 115, "반짝반짝 가루가 흩날려요. 손에 묻혀도 날 수는 없네요."], ["f", "👟", "작은 신발", 615, 800, 125, "요정의 신발이에요. 내 새끼손가락만 해요."], ["w", "🪞", "꽃잎 거울", 465, 250, 115, "꽃잎으로 꾸민 거울이에요. 작아진 내가 보여요!"]]];
+DECOR.forEach((list,ri)=>{const r=THEME.rooms[ri];if(!r)return;list.forEach((d,k)=>r.objects.push({id:'deco'+k,deco:1,title:d[1]+' '+d[2],art:(d[0]==='f'?E(d[3],d[4]+d[5]*0.42,d[5]*0.42,d[5]*0.09,'#0000002e'):'')+EM(d[3],d[4],d[1],d[5],'filter="url(#sh)"'),html:'<div class="box">'+d[6]+'</div>'}))});
 THEME.rooms.forEach((r,ri)=>r.objects.forEach(o=>{if(!o._rid){o.id='r'+ri+'_'+o.id;o._rid=1}}));/* 방마다 물건 id를 따로 → 다른 방의 같은 이름 문/물건이 '이미 푼 것'으로 처리되는 문제 방지 */
 try{const U=S.used||{};if(Object.keys(U).some(k=>!/^[pu]_r\d+_/.test(k))){THEME.rooms.forEach((r,ri)=>r.objects.forEach(o=>{const base=o.id.replace(/^r\d+_/,'');['p_','u_'].forEach(pf=>{if(U[pf+base]&&(ri<S.room||(base!=='door'&&ri<=S.room)))U[pf+o.id]=1})}));Object.keys(U).forEach(k=>{if(!/^[pu]_r\d+_/.test(k))delete U[k]});S.used=U;save()}}catch(e){}/* 예전 저장 기록 옮기기 */
 TH=THEME;if(GRADE<=2)document.body.classList.add('kids');S.max=S.max||0;render();

@@ -351,6 +351,9 @@ const THEME={
 
 </script>
 <script>
+/* 🧸 분위기 소품 (문제와 상관없는 기물 · 눌러 보면 설명만 나와요) */
+const DECOR=[[["w", "🍬", "사탕 포스터", 1080, 250, 115, "\"무지개 사탕 한 봉지 100원!\" 오래된 광고 포스터예요."], ["f", "📦", "빈 포장 상자", 1095, 735, 125, "사탕을 담을 빈 상자가 쌓여 있어요. 안에는 아무것도 없어요."], ["f", "🎀", "리본 뭉치", 480, 800, 125, "사탕 봉지를 묶는 분홍 리본이에요. 예쁘지만 지금은 필요 없어요."]], [["w", "📋", "맛 연구 노트", 1020, 250, 115, "\"딸기 맛 성공! 고추냉이 맛은… 실패.\" 재미있는 실험 기록이에요."], ["f", "🧂", "설탕 자루", 1095, 800, 125, "달콤한 설탕이 가득해요. 손가락으로 찍어 먹고 싶지만 참아요!"], ["w", "🧤", "오븐 장갑", 570, 250, 115, "뜨거운 냄비를 잡을 때 쓰는 장갑이 걸려 있어요."]], [["f", "🛒", "손수레", 90, 735, 125, "사탕 상자를 나르는 손수레예요. 바퀴가 삐걱삐걱 소리를 내요."], ["f", "🍫", "초콜릿 상자", 930, 735, 125, "\"출고 대기\" 스티커가 붙어 있어요. 열면 혼나요!"], ["w", "🧹", "빗자루", 90, 250, 115, "창고 바닥을 쓰는 빗자루예요. 설탕 가루가 묻어 있어요."]]];
+DECOR.forEach((list,ri)=>{const r=THEME.rooms[ri];if(!r)return;list.forEach((d,k)=>r.objects.push({id:'deco'+k,deco:1,title:d[1]+' '+d[2],art:(d[0]==='f'?E(d[3],d[4]+d[5]*0.42,d[5]*0.42,d[5]*0.09,'#0000002e'):'')+EM(d[3],d[4],d[1],d[5],'filter="url(#sh)"'),html:'<div class="box">'+d[6]+'</div>'}))});
 THEME.rooms.forEach((r,ri)=>r.objects.forEach(o=>{if(!o._rid){o.id='r'+ri+'_'+o.id;o._rid=1}}));/* 방마다 물건 id를 따로 → 다른 방의 같은 이름 문/물건이 '이미 푼 것'으로 처리되는 문제 방지 */
 try{const U=S.used||{};if(Object.keys(U).some(k=>!/^[pu]_r\d+_/.test(k))){THEME.rooms.forEach((r,ri)=>r.objects.forEach(o=>{const base=o.id.replace(/^r\d+_/,'');['p_','u_'].forEach(pf=>{if(U[pf+base]&&(ri<S.room||(base!=='door'&&ri<=S.room)))U[pf+o.id]=1})}));Object.keys(U).forEach(k=>{if(!/^[pu]_r\d+_/.test(k))delete U[k]});S.used=U;save()}}catch(e){}/* 예전 저장 기록 옮기기 */
 TH=THEME;if(GRADE<=2)document.body.classList.add('kids');S.max=S.max||0;render();
