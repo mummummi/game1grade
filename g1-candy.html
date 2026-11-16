@@ -29,7 +29,7 @@ button{font-family:inherit;font-size:18px;border:0;border-radius:12px;padding:10
 .roombar{display:flex;justify-content:space-between;align-items:center;margin:6px 0 8px;gap:8px;flex-wrap:wrap}
 .scene{position:relative;width:100%;border-radius:16px;overflow:hidden;border:2px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.45);background:#000}
 .scene svg{display:block;width:100%;height:auto}
-.hot{cursor:pointer;transition:filter .15s}
+.hot .ah{fill:#fff;fill-opacity:0;stroke:#fff;stroke-opacity:0;stroke-width:5;transition:fill-opacity .15s,stroke-opacity .15s}.hot:hover .ah{fill-opacity:.14;stroke-opacity:.95}.hot.selhint .ah{stroke:#ffd54f;stroke-opacity:1;fill-opacity:.12}.hot.done .ah{fill-opacity:0}.hot{cursor:pointer;transition:filter .15s}
 .hot:hover{filter:drop-shadow(0 0 12px color-mix(in srgb,var(--gold) 90%,transparent)) brightness(1.08)}
 .hot.done{filter:saturate(.75)}
 .hot.selhint{animation:hl 1.2s ease-in-out infinite}
@@ -367,6 +367,14 @@ const sw=S*1.1;return EM(x,y-S*0.12,e,S*0.68,'filter="url(#sh)"')+R(x-sw/2,y+S*0
 /* 🧸 분위기 소품 (문제와 상관없는 기물 · 눌러 보면 설명만 나와요) */
 const DECOR=[[["p", "🍬", "사탕 포스터", 1110, 250, 150, "\"무지개 사탕 한 봉지 100원!\" 오래된 광고 포스터예요."], ["f", "📦", "빈 포장 상자", 1095, 735, 125, "사탕을 담을 빈 상자가 쌓여 있어요. 안에는 아무것도 없어요."], ["f", "🎀", "리본 뭉치", 480, 800, 125, "사탕 봉지를 묶는 분홍 리본이에요. 예쁘지만 지금은 필요 없어요."]], [["p", "📋", "맛 연구 노트", 1020, 250, 150, "\"딸기 맛 성공! 고추냉이 맛은… 실패.\" 재미있는 실험 기록이에요."], ["f", "🧂", "설탕 자루", 1095, 800, 125, "달콤한 설탕이 가득해요. 손가락으로 찍어 먹고 싶지만 참아요!"], ["s", "🧤", "오븐 장갑", 570, 250, 150, "뜨거운 냄비를 잡을 때 쓰는 장갑이 걸려 있어요."]], [["f", "🛒", "손수레", 90, 735, 125, "사탕 상자를 나르는 손수레예요. 바퀴가 삐걱삐걱 소리를 내요."], ["f", "🍫", "초콜릿 상자", 930, 735, 125, "\"출고 대기\" 스티커가 붙어 있어요. 열면 혼나요!"], ["s", "🧹", "빗자루", 90, 250, 150, "창고 바닥을 쓰는 빗자루예요. 설탕 가루가 묻어 있어요."]]];
 DECOR.forEach((list,ri)=>{const r=THEME.rooms[ri];if(!r)return;list.forEach((d,k)=>r.objects.push({id:'deco'+k,deco:1,title:d[1]+' '+d[2],art:DART(d),html:'<div class="box">'+d[6]+'</div>'}))});
+/* 🖼️ AI 배경 그림 */
+const ARTMAP={"rooms": [{"jar": [0, 430, 340, 470], "machine": [320, 70, 410, 640], "door": [1345, 120, 220, 670], "deco0": [770, 160, 245, 265], "deco1": [730, 490, 380, 265], "deco2": [960, 420, 340, 190]}, {"pot": [0, 400, 390, 400], "molds": [370, 415, 480, 230], "door": [1345, 120, 220, 670], "deco0": [395, 165, 350, 240], "deco1": [850, 585, 175, 180], "deco2": [995, 215, 230, 190]}, {"clock": [680, 175, 240, 240, {"keep": [-115.6, -32.6, 1.17]}], "exit": [1345, 125, 220, 610], "bear": [1110, 355, 215, 395], "deco0": [350, 555, 320, 310], "deco1": [440, 465, 280, 240], "deco2": [235, 315, 140, 400]}], "id": "g1-candy"};
+ARTMAP.rooms.forEach((hot,ri)=>{const r=THEME.rooms[ri];if(!r||!hot)return;const src='art/'+ARTMAP.id+'_'+(ri+1)+'.webp';
+ r.bg=()=>`<image href="${src}" x="0" y="0" width="1600" height="900" preserveAspectRatio="xMidYMid slice"/>`;
+ r.objects=r.objects.filter(o=>!(o.deco&&!hot[o.id]));
+ r.objects.forEach(o=>{const h=hot[o.id];if(!h)return;const [x,y,w,hh,opt]=h;const old=o.art;
+  o.art=()=>{let s='';if(opt&&opt.keep){const [tx,ty,sc]=opt.keep;s=`<g transform="translate(${tx} ${ty}) scale(${sc})">${val(old)}</g>`}
+   return s+`<rect class="ah" x="${x}" y="${y}" width="${w}" height="${hh}" rx="22"/>`}})});
 THEME.rooms.forEach((r,ri)=>r.objects.forEach(o=>{if(!o._rid){o.id='r'+ri+'_'+o.id;o._rid=1}}));/* 방마다 물건 id를 따로 → 다른 방의 같은 이름 문/물건이 '이미 푼 것'으로 처리되는 문제 방지 */
 try{const U=S.used||{};if(Object.keys(U).some(k=>!/^[pu]_r\d+_/.test(k))){THEME.rooms.forEach((r,ri)=>r.objects.forEach(o=>{const base=o.id.replace(/^r\d+_/,'');['p_','u_'].forEach(pf=>{if(U[pf+base]&&(ri<S.room||(base!=='door'&&ri<=S.room)))U[pf+o.id]=1})}));Object.keys(U).forEach(k=>{if(!/^[pu]_r\d+_/.test(k))delete U[k]});S.used=U;save()}}catch(e){}/* 예전 저장 기록 옮기기 */
 TH=THEME;if(GRADE<=2)document.body.classList.add('kids');S.max=S.max||0;render();
