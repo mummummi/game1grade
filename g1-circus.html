@@ -65,6 +65,7 @@ button{font-family:inherit;font-size:18px;border:0;border-radius:12px;padding:10
 .opts{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:10px}
 .opt{background:var(--panel2);color:var(--ink);border:2px solid var(--line);min-width:110px;padding:12px 16px;font-size:18px}
 .opt.big{font-size:34px;min-width:80px}
+.mopt.on,.mr.on{border-color:var(--gold)!important;background:#ffd54f33!important}.mlist{display:flex;flex-direction:column;gap:8px;margin:10px auto;max-width:620px}.mrow{display:flex;align-items:center;gap:10px;background:var(--panel2);border:2px solid var(--line);border-radius:14px;padding:8px 12px}.ml{flex:1;font-size:18px}.ma{opacity:.6}.mr{min-width:150px;background:#ffffff14;color:var(--ink);border:2px dashed var(--line);border-radius:12px;padding:10px 12px;font-size:18px}
 .ordercards{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:10px 0}
 .ordercards button{background:var(--panel2);color:var(--ink);border:2px solid var(--line);padding:10px 14px;font-size:17px;min-width:90px;position:relative}
 .ordercards button.on{border-color:var(--gold);opacity:.55}
@@ -207,10 +208,12 @@ function lockHTML(k){
   if(k.kind==='keys')return `<div class="seqshow" id="sq"></div><div class="keys">${(k.opts||['도','레','미','파','솔','라','시']).map(v=>`<button data-v="${v}">${v}</button>`).join('')}</div><div class="center"><button class="ghost" data-x="1">⌫ 지우기</button> <button class="btn" id="lkOk">확인</button></div>`;
   if(k.kind==='choice')return `<div class="opts">${k.opts.map(o=>`<button class="opt${k.big?' big':''}" data-v="${o}">${o}</button>`).join('')}</div>`;
   if(k.kind==='order')return `<div class="ordercards">${k.opts.map(o=>`<button data-v="${o}">${o}</button>`).join('')}</div><div class="center"><button class="ghost" data-x="1">다시 고르기</button></div>`;
+  if(k.kind==='multi')return `<div class="opts">${k.opts.map(o=>`<button class="opt mopt${k.big?' big':''}" data-m="${o}">${o}</button>`).join('')}</div><div class="center muted" style="margin-top:6px">맞는 것을 <b>모두</b> 눌러 고른 뒤 확인을 눌러요</div><div class="center"><button class="btn" id="lkOk">확인</button></div>`;
+  if(k.kind==='match'||k.kind==='sort'){const ch=k.kind==='match'?k.right:k.bins;return `<div class="mlist">${k.left.map((l,i)=>`<div class="mrow"><span class="ml">${l}</span><span class="ma">${k.kind==='match'?'↔':'→'}</span><button class="mr" data-i="${i}">❔</button></div>`).join('')}</div><div class="center muted">${k.kind==='match'?'오른쪽 칸을 눌러 짝을 바꿔요':'칸을 눌러 어디에 들어갈지 바꿔요'} (${ch.join(' · ')})</div><div class="center"><button class="btn" id="lkOk">확인</button></div>`}
 }
 function bindLock(k,ok){
   const box=$('mbody'),msg=$('lm');let seq=[];
-  const judge=v=>{const good=k.kind==='choice'?v===k.ans:Array.isArray(k.ans)?norm(v)===norm(k.ans.join('')):[k.ans,...(k.alts||[])].some(a=>norm(v)===norm(a));
+  const judge=v=>{const good=v===true?true:v===false?false:k.kind==='choice'?v===k.ans:Array.isArray(k.ans)?norm(v)===norm(k.ans.join('')):[k.ans,...(k.alts||[])].some(a=>norm(v)===norm(a));
     if(good){msg.className='msg good';msg.textContent='✅ 철컥! 열렸다!';tone(660);setTimeout(()=>tone(990),120);box.querySelectorAll('button,input').forEach(x=>x.disabled=true);setTimeout(ok,FAST?0:900)}
     else{S.wrong++;save();msg.className='msg bad';msg.textContent=k.bad||'❌ 열리지 않는다…';tone(150,.3);const c=$('mcard');c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');if(k.kind!=='text'){seq=[];show()}}};
   const show=()=>{const sq=box.querySelector('#sq');if(sq)sq.innerHTML=seq.map(v=>k.kind==='color'?`<span style="background:${k.opts.find(o=>o[0]===v)[1]}"></span>`:k.kind==='dir'?`<span>${{U:'⬆️',D:'⬇️',L:'⬅️',R:'➡️'}[v]}</span>`:`<span>${v}</span>`).join('');
@@ -219,7 +222,9 @@ function bindLock(k,ok){
   if(k.kind==='text'){$('lf').onsubmit=e=>{e.preventDefault();const v=$('li').value;if(v.trim())judge(v)}}
   if(['dir','color','keys'].includes(k.kind)){box.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{if(seq.length>=(k.ans.length+3))return;seq.push(b.dataset.v);if(k.kind==='keys')tone(NOTE[b.dataset.v]||440,.4);else tone(600,.05);show()});box.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{seq.pop();show()});$('lkOk').onclick=()=>judge(seq.join(''))}
   if(k.kind==='choice')box.querySelectorAll('.opt').forEach(b=>b.onclick=()=>judge(b.dataset.v));
-  if(k.kind==='order'){box.querySelectorAll('.ordercards [data-v]').forEach(b=>b.onclick=()=>{if(seq.includes(b.dataset.v))return;seq.push(b.dataset.v);tone(600,.05);show();if(seq.length===k.opts.length)judge(seq.join(''))});box.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{seq=[];show()})}
+  if(k.kind==='multi'){const on=new Set();const upd=()=>box.querySelectorAll('[data-m]').forEach(b=>b.classList.toggle('on',on.has(b.dataset.m)));box.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const v=b.dataset.m;on.has(v)?on.delete(v):on.add(v);tone(600,.04);upd()});box._set=a=>{a.forEach(v=>on.add(String(v)));upd()};$('lkOk').onclick=()=>{const A=k.ans.map(String);const g=on.size===A.length&&A.every(v=>on.has(v));if(!g){on.clear();upd()}judge(g)}}
+  if(k.kind==='match'||k.kind==='sort'){const ch=k.kind==='match'?k.right:k.bins;const st=k.left.map(()=>-1);const upd=()=>box.querySelectorAll('.mr').forEach(b=>{const i=+b.dataset.i;b.textContent=st[i]<0?'❔':ch[st[i]];b.classList.toggle('on',st[i]>=0)});box.querySelectorAll('.mr').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;st[i]=(st[i]+1)%ch.length;tone(520+st[i]*60,.04);upd()});box._set=a=>{a.forEach((v,i)=>st[i]=ch.indexOf(v));upd()};$('lkOk').onclick=()=>{if(st.some(x=>x<0)){msg.className='msg bad';msg.textContent='❔ 아직 정하지 않은 칸이 있어요.';return}judge(st.every((x,i)=>ch[x]===k.ans[i]))}}
+  if(k.kind==='order'){box.querySelectorAll('.ordercards [data-v]').forEach(b=>b.onclick=()=>{if(seq.includes(b.dataset.v))return;seq.push(b.dataset.v);tone(600,.05);show();if(seq.length===(Array.isArray(k.ans)?k.ans.length:k.opts.length))judge(seq.join('\u0001')===(Array.isArray(k.ans)?k.ans:[]).join('\u0001')||(!Array.isArray(k.ans)&&norm(seq.join(''))===norm(k.ans)))});box.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{seq=[];show()})}
 }
 /* ═══════ 물건 조사 ═══════ */
 const FAST=QS.get('fast')==='1';
@@ -300,7 +305,7 @@ window.__auto=async function(){const out=[];const sl=ms=>new Promise(r=>setTimeo
     for(const o of r.objects){if(!avail(o)||solved(o)&&!o.door)continue;if(o.need&&!has(o.need)&&!S.used['u_'+o.id])continue;if(o.door&&!o.lock&&!(o.needs||[]).every(flag))continue;
       const room=S.room;if(o.need&&!S.used['u_'+o.id])SEL=o.need;activate(o);await sl(5);
       if(o.lock&&!solved(o)){const k=val(o.lock);const v=Array.isArray(k.ans)?k.ans:k.ans;
-        if(k.kind==='dial'){$('mbody')._set(v);$('lkOk').click()}else if(k.kind==='text'){$('li').value=v;$('lf').requestSubmit()}
+        if(['dial','multi','match','sort'].includes(k.kind)){$('mbody')._set(v);$('lkOk').click()}else if(k.kind==='text'){$('li').value=v;$('lf').requestSubmit()}
         else if(k.kind==='choice'){[...document.querySelectorAll('#mbody .opt')].find(b=>b.dataset.v===k.ans).click()}
         else{const arr=Array.isArray(v)?v:String(v).split('');for(const x of arr)[...document.querySelectorAll('#mbody [data-v]')].find(b=>b.dataset.v===x).click();$('lkOk')&&$('lkOk').click()}
         await sl(30)}
@@ -360,6 +365,56 @@ const THEME={
   ]};
 
 </script>
+<script>/* 🧩 퍼즐 재설계 */
+(function(){const P=(function(){
+/* 1학년 · 서커스 무대 뒤 — 규칙, 받침 낱말, 덧셈·뺄셈, 흉내 내는 말, 순서(서수), 시계 */
+const BC={빨강:'#e53935',노랑:'#fdd835',파랑:'#1e88e5',초록:'#43a047'};
+const BTN=L(['빨강','노랑'],['빨강','노랑','노랑'],['파랑','빨강','노랑','노랑']);const BALL=[...BTN,...BTN];
+const dot=c=>`<span style="display:inline-block;width:34px;height:34px;border-radius:50%;background:${BC[c]};margin:4px;border:3px solid #0003;vertical-align:middle"></span>`;
+const HATW=L(['곰','코','달','북','배','공'],['공','코','별','사자','북','우산','나비','풍선'],['공','코','별','사자','북','우산','나비','풍선','기린','꽃']);
+const bat=w=>[...w].some(ch=>(ch.charCodeAt(0)-0xAC00)%28!==0);
+const JG=L([3,4,2],[8,7,4],[16,9,7]);const JANS=String(JG[0]+JG[1]-JG[2]);
+const RHY=L(['쿵','짝','쿵','짝'],['쿵','짝','짝','쿵','짝','짝'],['쿵','쿵','짝','쿵','짝','짝','쿵','짝']);
+const ANI=L(['🦁','🐻','🐶'],['🦁','🐻','🐶','🐵'],['🦁','🐻','🐶','🐵','🐰']);
+const ANN={'🦁':'사자','🐻':'곰','🐶':'강아지','🐵':'원숭이','🐰':'토끼'};
+const LINE=L(['🐻','🦁','🐶'],['🦁','🐻','🐶','🐵'],['🐰','🦁','🐻','🐶','🐵']);
+const lineClue=()=>L(['곰은 <b>첫째</b>로 나가요.','사자는 곰 <b>바로 뒤</b>예요.','강아지는 <b>맨 끝</b>이에요.'],['원숭이는 <b>맨 끝</b>이에요.','사자는 <b>첫째</b>예요.','곰은 사자 <b>바로 뒤</b>예요.','강아지는 원숭이 <b>바로 앞</b>이에요.'],['곰은 <b>셋째</b>예요.','토끼는 사자보다 <b>앞</b>이에요.','원숭이는 <b>맨 끝</b>이에요.','강아지는 곰과 원숭이 <b>사이</b>예요.','사자는 <b>둘째</b>예요.']);
+const CK=L([[2,0],[4,0],[6,30]],[[3,30],[5,0],[6,30],[8,0]],[[1,30],[3,0],[4,30],[6,0],[7,30]]);const ctn=([h,m])=>`${h}시${m?' 30분':''}`;
+const EV=['분장 시작','연습 시작','동물 입장','공연 시작','인사 시간'].slice(0,CK.length);const CSH=L([1,2,0],[2,0,3,1],[3,1,4,0,2]);
+return {
+ story:'오늘은 신나는 서커스 공연 날! 🎪 그런데 공연 직전에 무대 뒤 문이 모두 잠겨 버렸어요. 광대 <b>"삐에로 뽀뽀"</b>가 울상이에요. "으앙! 방 곳곳에 내가 남긴 쪽지와 그림을 잘 살펴 줘. 공연 준비를 끝내면 무대 문이 열릴 거야!" 🤡',
+ rooms:[
+ {o:{
+  deco1:{title:'👗 뽀뽀의 반짝이 옷',html:()=>`<div class="box">뽀뽀의 공연 옷이에요. 단추가 위에서부터 이렇게 달려 있어요.</div><div class="paper center">${BTN.map(dot).join('')}</div><div class="muted center">"풍선도 내 옷 단추 순서대로 달아 줘!"</div>`},
+  balloons:{title:'🎈 풍선 줄',html:()=>`<div class="box">풍선을 <b>${BALL.length}개</b> 달아야 해요. 뽀뽀 옷의 단추 순서를 처음부터 끝까지 따라 달고, 다 달면 <b>한 번 더</b> 반복해요.</div>`,lock:()=>({kind:'color',ans:BALL,opts:Object.entries(BC),q:`풍선 ${BALL.length}개의 색을 차례로 누르세요`}),give:'ticket',done:'풍선 끝에 🎟️ 무대 입장권이 묶여 있었어요!'},
+  hats:{title:'🎩 이름표 모자 상자',html:()=>`<div class="box">모자마다 이름표가 붙어 있어요. 뽀뽀: "<b>받침이 있는 낱말</b> 모자만 공연에 써!"</div><div class="paper center muted">받침: 글자 아래에 붙는 자음 (예: <b>곰</b>의 ㅁ)</div>`,lock:()=>({kind:'multi',ans:HATW.filter(bat),opts:HATW,big:true,q:'받침이 있는 낱말 모자를 모두 고르세요'}),set:'hat',done:'공연 모자를 다 골랐어요!'},
+  door:{need:'ticket',when:['hat'],pre:'🔒 "공연 모자를 먼저 골라 줘!"'},
+ },hints:()=>L(['옷을 눌러 단추 색을 확인해요.','빨강 노랑 빨강 노랑!','곰의 ㅁ, 달의 ㄹ처럼 아래에 붙은 글자를 찾아요.',`받침 있는 낱말: ${HATW.filter(bat).join(', ')}`],['옷의 단추 3개를 두 번 반복해요.','받침이 없는 글자: 코, 사, 자, 나, 비…','공, 별, 북, 우산, 풍선은 받침이 있어요.'],['단추 4개를 두 번! 모두 8개예요.','낱말의 모든 글자를 살펴요. 받침이 하나라도 있으면 골라요.'])},
+ {o:{
+  deco1:{title:'🟦 푹신한 매트',html:()=>`<div class="box">매트 위에 떨어뜨린 공이 굴러다녀요. 세어 보니 <b>${JG[2]}개</b>예요.</div>`},
+  juggle:{title:'🤹 저글링 공 상자',html:()=>`<div class="box">광대: "빨간 공 <b>${JG[0]}개</b>, 파란 공 <b>${JG[1]}개</b>를 던졌어! 그런데 몇 개는 매트에 떨어뜨렸지 뭐야. 지금 <b>내 손에 남은 공</b>은 몇 개일까?"</div>`,lock:()=>({kind:'dial',ans:JANS,q:'손에 남은 공은 몇 개?'}),give:'stick',done:'공 상자 밑에서 🥁 북채를 찾았어요!'},
+  deco0:{title:'🎶 외발자전거 바구니의 악보',html:()=>`<div class="box">바구니에 북 악보가 꽂혀 있어요. 그림이 소리를 알려 줘요.</div><div class="paper center" style="font-size:34px">${RHY.map(r=>r==='쿵'?'🥁':'👏').join(' ')}</div><div class="muted center">🥁 = 큰북 소리 "쿵" &nbsp; 👏 = 손뼉 소리 "짝"</div>`},
+  drum:{title:'🥁 큰북',need:'stick',locked:'북을 칠 북채가 없어요.',html:'<div class="box">북에 "악보대로 치면 문이 열려요"라고 써 있어요. 악보는 이 방 어딘가에 있어요.</div>',lock:()=>({kind:'keys',ans:RHY,opts:['쿵','짝'],q:'악보대로 소리를 누르세요'}),set:'drum',done:'둥둥 짝짝! 연습장 문이 들썩여요.'},
+  door:{when:['drum'],pre:'🔒 북을 쳐야 문이 열려요.'},
+ },hints:()=>L(['매트를 눌러 떨어진 공을 세어요.','3과 4를 더하고 2를 빼요.','악보는 외발자전거 바구니에 있어요.'],['던진 공(8+7)에서 떨어진 공을 빼요.',JANS+'개','🥁는 쿵, 👏는 짝이에요.'],['16+9를 먼저 하고, 떨어진 공을 빼요.','악보 그림을 하나씩 짚으며 눌러요.'])},
+ {o:{
+  deco2:{title:'📜 무대 순서 쪽지',html:()=>`<div class="box">포스터 아래 쪽지에 무대에 나갈 순서가 적혀 있어요.</div>${lineClue().map(t=>`<div class="paper" style="font-size:20px">${t}</div>`).join('')}`},
+  line:{title:'🐾 동물 친구들 줄',html:()=>`<div class="box">사회자 사자: "<b>무대 순서 쪽지</b>대로 줄을 세워 주세요!"</div><div class="paper center" style="font-size:40px">${ANI.join(' ')}</div><div class="muted center">${ANI.map(a=>a+' '+ANN[a]).join(' · ')}</div>`,lock:()=>({kind:'order',ans:LINE,opts:ANI,q:'첫째부터 차례로 누르세요'}),give:'whistle',done:'줄을 다 세웠어요! 사자가 📯 나팔을 줬어요.'},
+  deco0:{title:'🗓️ 오늘의 시간표',html:()=>`<div class="box">간식 상자에 오늘의 시간표가 붙어 있어요.</div>${CSH.map(i=>`<div class="paper" style="display:flex;align-items:center;gap:12px"><b style="font-size:22px;min-width:110px">${EV[i]}</b>${VIS.clock(CK[i][0],CK[i][1],110)}</div>`).join('')}`},
+  clock:{title:'🕰️ 무대 시계판',html:'<div class="box">시계판에 일정 이름표를 꽂는 칸이 있어요. <b>시간표</b>의 시계를 읽고 알맞은 칸에 꽂아요.</div>',lock:()=>({kind:'match',left:CK.map(ctn),right:EV,ans:EV,q:'시각에 맞는 일정을 골라요'}),set:'time',done:'시계판이 반짝! 공연 준비 완료!'},
+  stage:{need:'whistle',when:['time'],pre:'🔒 시계판을 먼저 맞춰요.'},
+ },hints:()=>L(['쪽지는 포스터 아래에 있어요.','곰이 첫째, 그다음 사자, 마지막 강아지!','긴바늘이 12면 몇 시, 6이면 몇 시 30분이에요.'],['사자가 첫째, 곰은 둘째예요.','원숭이가 맨 끝이니 강아지는 셋째예요.','시간표는 간식 상자에 있어요.'],['곰이 셋째, 사자가 둘째면 첫째는 토끼예요.','짧은바늘이 두 숫자 사이면 30분이에요.'])},
+ ]};
+
+})();
+const KEYS=['lock','give','set','need','when','needs','done','locked','pre','after','consume','useMsg','html','hideWhen'];
+['story','endText','title'].forEach(k=>{if(P[k])THEME[k]=P[k]});if(P.items)Object.assign(THEME.items,P.items);
+(P.rooms||[]).forEach((pr,ri)=>{const r=THEME.rooms[ri];if(!r||!pr)return;if(pr.hints)r.hints=pr.hints;if(pr.tip)r.tip=pr.tip;if(pr.name)r.name=pr.name;
+ Object.entries(pr.o||{}).forEach(([id,pt])=>{let o=r.objects.find(x=>x.id===id);if(!o){o={id};r.objects.push(o)}
+  if(pt._clear!==false&&!o.door)KEYS.forEach(k=>delete o[k]);if(o.door)['lock','need','when','needs','pre','locked','html'].forEach(k=>{if(k in pt)delete o[k]});
+  Object.assign(o,pt);delete o._clear;if(/^deco/.test(id))delete o.deco})});
+})();
+/* 🧩 끝 */</script>
 <script>
 const DART=d=>{const [k,e,t,x,y,S]=d;
 if(k==='f')return E(x,y+S*0.4,S*0.42,S*0.09,'#0000002e')+EM(x,y,e,S*0.85,'filter="url(#sh)"');
@@ -368,9 +423,9 @@ if(k==='p'){const w=S*0.95,h=S*0.95;return C(x,y-h/2-10,4,'#555')+P(`M${x} ${y-h
 const sw=S*1.1;return EM(x,y-S*0.12,e,S*0.68,'filter="url(#sh)"')+R(x-sw/2,y+S*0.24,sw,13,'#8d5a34','rx="3" filter="url(#sh)"')+R(x-sw/2+12,y+S*0.24+13,9,20,'#5e3a1f','rx="2"')+R(x+sw/2-21,y+S*0.24+13,9,20,'#5e3a1f','rx="2"')};
 /* 🧸 분위기 소품 (문제와 상관없는 기물 · 눌러 보면 설명만 나와요) */
 const DECOR=[[["s", "🪞", "분장 거울", 630, 250, 150, "전구가 반짝이는 거울이에요. 비춰 보니 내 얼굴이 웃고 있어요."], ["f", "👗", "의상 걸이", 555, 735, 125, "반짝이 옷이 잔뜩 걸려 있어요. 주머니는 모두 비어 있어요."], ["f", "💄", "분장 상자", 960, 735, 125, "빨간 코, 하얀 분, 알록달록 물감이 들어 있어요."]], [["f", "🛞", "외바퀴 자전거", 90, 800, 125, "광대가 타는 자전거예요. 한 바퀴뿐이라 타기 어려워 보여요."], ["f", "🤸", "매트", 1140, 800, 125, "떨어져도 안 아프게 깔아 둔 푹신한 매트예요."], ["s", "🎯", "과녁판", 1005, 250, 150, "던지기 연습용 과녁이에요. 가운데에 맞힌 자국은 없어요."]], [["f", "🥕", "당근 바구니", 585, 735, 125, "동물 친구들의 간식이에요. 당근 냄새가 솔솔 나요."], ["f", "🪣", "물통", 990, 735, 125, "코끼리가 마실 물이 담긴 커다란 물통이에요."], ["p", "🎟️", "공연 포스터", 990, 250, 150, "\"오늘 밤 7시, 신나는 서커스!\" 포스터가 붙어 있어요."]]];
-DECOR.forEach((list,ri)=>{const r=THEME.rooms[ri];if(!r)return;list.forEach((d,k)=>r.objects.push({id:'deco'+k,deco:1,title:d[1]+' '+d[2],art:DART(d),html:'<div class="box">'+d[6]+'</div>'}))});
+DECOR.forEach((list,ri)=>{const r=THEME.rooms[ri];if(!r)return;list.forEach((d,k)=>{const ex=r.objects.find(o=>o.id==='deco'+k);if(ex){if(!ex.art)ex.art=DART(d);if(!ex.title)ex.title=d[1]+' '+d[2];return}r.objects.push({id:'deco'+k,deco:1,title:d[1]+' '+d[2],art:DART(d),html:'<div class="box">'+d[6]+'</div>'})})});
 /* 🖼️ AI 배경 그림 */
-const ARTMAP={"rooms": [{"balloons": [24, 208, 290, 590], "hats": [248, 120, 410, 185], "door": [1424, 152, 176, 650], "deco0": [648, 240, 296, 305], "deco1": [1000, 400, 375, 400], "deco2": [272, 584, 296, 210]}, {"juggle": [80, 260, 295, 400], "drum": [312, 660, 240, 160], "door": [1432, 140, 168, 545], "deco0": [736, 540, 145, 272], "deco1": [912, 733, 688, 128], "deco2": [1024, 197, 240, 272]}, {"line": [32, 306, 536, 505], "clock": [700, 190, 184, 184, {"clip": [620, 260, 78, 792, 282, 84]}], "stage": [1400, 0, 200, 810], "deco0": [560, 640, 160, 160], "deco1": [856, 657, 145, 138], "deco2": [1040, 218, 256, 336]}], "id": "g1-circus"};
+const ARTMAP={"rooms": [{"balloons": [24, 208, 290, 590], "hats": [248, 120, 410, 185], "door": [1424, 152, 176, 650], "deco0": [648, 240, 296, 305], "deco1": [1000, 400, 375, 400], "deco2": [272, 584, 296, 210]}, {"juggle": [80, 260, 295, 400], "drum": [312, 660, 240, 160], "door": [1432, 140, 168, 545], "deco0": [736, 540, 145, 272], "deco1": [912, 733, 688, 128], "deco2": [1024, 197, 240, 272]}, {"line": [32, 306, 536, 505], "clock": [700, 190, 184, 184], "stage": [1400, 0, 200, 810], "deco0": [560, 640, 160, 160], "deco1": [856, 657, 145, 138], "deco2": [1040, 218, 256, 336]}], "id": "g1-circus"};
 const AMbox=a=>{const ns='http://www.w3.org/2000/svg';const sv=document.createElementNS(ns,'svg');sv.setAttribute('width','1600');sv.setAttribute('height','900');sv.style.cssText='position:absolute;left:-9999px;top:0';sv.innerHTML=DEFS+a;document.body.appendChild(sv);let b={x:0,y:0,width:1,height:1};try{const g=document.createElementNS(ns,'g');while(sv.childNodes.length>1)g.appendChild(sv.childNodes[1]);sv.appendChild(g);const r=g.getBBox();b={x:r.x,y:r.y,width:r.width||1,height:r.height||1}}catch(e){}sv.remove();return b};
 ARTMAP.rooms.forEach((hot,ri)=>{const r=THEME.rooms[ri];if(!r||!hot)return;const src='art/'+ARTMAP.id+'_'+(ri+1)+'.webp';
  r.bg=()=>`<image href="${src}" x="0" y="0" width="1600" height="900" preserveAspectRatio="xMidYMid slice"/>`;
@@ -378,6 +433,8 @@ ARTMAP.rooms.forEach((hot,ri)=>{const r=THEME.rooms[ri];if(!r||!hot)return;const
  r.objects.forEach(o=>{const h=hot[o.id];if(!h)return;const [x,y,w,hh,opt]=h;const old=o.art;
   o.art=()=>{let s='';if(opt&&opt.keep){const [tx,ty,sc]=opt.keep;s=`<g transform="translate(${tx} ${ty}) scale(${sc})">${val(old)}</g>`}
    if(opt&&opt.clip){const [ox,oy,orr,nx,ny,nr]=opt.clip;const sc=nr/orr;const cid='cl_'+o.id;s+=`<clipPath id="${cid}"><circle cx="${ox}" cy="${oy}" r="${orr}"/></clipPath><g transform="translate(${nx-ox*sc} ${ny-oy*sc}) scale(${sc})"><g clip-path="url(#${cid})">${val(old)}</g></g>`}
+   if(opt&&opt.lab){const arr=eval(opt.lab.expr);s+=arr.map((t,i)=>{const [lx,ly]=opt.lab.pos?opt.lab.pos[i]:[x+w*(i+.5)/arr.length,opt.lab.y];return `<rect x="${lx-48}" y="${ly-30}" width="96" height="56" rx="14" fill="#3e2723" stroke="#ffe082" stroke-width="4" opacity=".92"/><text x="${lx}" y="${ly+10}" text-anchor="middle" font-size="32" font-weight="bold" fill="#ffe082">${t}</text>`}).join('')}
+   if(opt&&opt.svg){s+=eval(opt.svg)}
    if(opt&&opt.fit){const a=val(old);const b=AMbox(a);const p=opt.pad??0.9;const sc=Math.min(w/b.width,hh/b.height)*p;const tx=x+w/2-(b.x+b.width/2)*sc,ty=y+hh/2-(b.y+b.height/2)*sc;s=`<g transform="translate(${tx} ${ty}) scale(${sc})" opacity="${opt.op??1}">${a}</g>`}
    return s+`<rect class="ah" x="${x}" y="${y}" width="${w}" height="${hh}" rx="22"/>`}})});
 THEME.rooms.forEach((r,ri)=>r.objects.forEach(o=>{if(!o._rid){o.id='r'+ri+'_'+o.id;o._rid=1}}));/* 방마다 물건 id를 따로 → 다른 방의 같은 이름 문/물건이 '이미 푼 것'으로 처리되는 문제 방지 */
