@@ -254,7 +254,7 @@ function activate(o){
   if(o.toggle){if(o.once&&flag(o.toggle)){if(o.after)openModal(val(o.title),val(o.after));else toast(val(o.on)||'이미 켜져 있어요.');return}S.flags[o.toggle]=S.flags[o.toggle]?0:1;save();tone(S.flags[o.toggle]?880:330,.15);render();const m=val(S.flags[o.toggle]?o.on:o.off);if(o.html&&S.flags[o.toggle])openModal(val(o.title),val(o.html));else toast(m||'딸깍!');return}
   if(o.press){const g=o.press[0],v=o.press[1],sd=TH.seqs[g];S.seq=S.seq||{};const q=(S.seq[g]=S.seq[g]||[]);if(flag(sd.set)){if(o.after)openModal(val(o.title),val(o.after));else toast(val(o.say)||'🔔');return}q.push(v);while(q.length>sd.ans.length)q.shift();tone(o.tone||NOTE[v]||(520+q.length*60),.35);save();
     if(q.join('|')===sd.ans.join('|')){S.flags[sd.set]=1;q.length=0;save();if(sd.give)give(sd.give);setTimeout(()=>{toast(val(sd.done)||'✨ 철컥! 무언가 움직였다!');tone(990)},350);render()}else toast((val(o.say)||'🔔')+' <span style="opacity:.75">'+q.map(x=>sd.show?sd.show(x):x).join(' · ')+'</span>');return}
-  if(o.slots&&!S.used['u_'+o.id]){const pl=S.used['sl_'+o.id]=S.used['sl_'+o.id]||[];
+  if(o.slots&&!S.used['u_'+o.id]){if(o.when&&!o.when.every(flag)){openModal(val(o.title),`<div class="box">${val(o.pre)||'🔒 아직 열 수 없다. 방 안의 단서를 더 찾아보자.'}</div>`);return}const pl=S.used['sl_'+o.id]=S.used['sl_'+o.id]||[];
     if(SEL&&o.slots.includes(SEL)&&!pl.includes(SEL)){pl.push(SEL);consume(SEL);SEL=null;tone(700);save();
       if(pl.length===o.slots.length){S.used['u_'+o.id]=1;save();if(o.useMsg)toast(val(o.useMsg));if(o.lock||o.door)return activate(o);return finishObj(o)}
       toast(`👍 끼웠다! ${o.slots.length-pl.length}개 더 필요해요.`);render();return}
@@ -451,7 +451,7 @@ return {
 })();
 const __M=(a,b)=>{const r=Object.assign({},a);['story','endText','title','combos','seqs'].forEach(k=>{if(b[k]!==undefined)r[k]=b[k]});r.items=Object.assign({},a.items||{},b.items||{});
  r.rooms=(a.rooms||[]).map((ra,i)=>{const rb=(b.rooms||[])[i];if(!rb)return ra;const o=Object.assign({},ra.o||{});
-  Object.entries(rb.o||{}).forEach(([id,p])=>{if(p===null){delete o[id];return}const base=p._new?{}:Object.assign({},o[id]||{});Object.entries(p).forEach(([k,v])=>{if(k==='_new')return;if(v===null)delete base[k];else base[k]=v});o[id]=base});
+  Object.entries(rb.o||{}).forEach(([id,p])=>{if(p===null){delete o[id];return}const base=p._new?{}:Object.assign({},o[id]||{});Object.entries(p).forEach(([k,v])=>{if(k==='_new')return;base[k]=v});o[id]=base});
   const x=Object.assign({},ra,rb);x.o=o;return x});return r};
 return __M(__V2,__V3);
 })();
